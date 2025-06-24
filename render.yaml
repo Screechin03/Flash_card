@@ -1,0 +1,73 @@
+services:
+  # Backend API service
+  - type: web
+    name: flashcard-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        value: https://flashcard-web.onrender.com
+      - key: DB_HOST
+        fromDatabase:
+          name: flashcard-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: flashcard-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: flashcard-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: flashcard-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: flashcard-db
+          property: password
+    healthCheckPath: /api/health
+
+  # Frontend web service
+  - type: web
+    name: flashcard-web
+    runtime: node
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: flashcard-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: flashcard-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+
+# PostgreSQL database
+databases:
+  - name: flashcard-db
+    databaseName: flashcards_db
+    plan: free
+    ipAllowList: []
+
+routes:
+  - type: rewrite
+    source: /api/*
+    destination: flashcard-api
+  - type: rewrite
+    source: /*
+    destination: flashcard-web
